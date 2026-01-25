@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--secondary));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Monaco editor customization */
+.monaco-editor {
+  border-radius: var(--radius);
+}
+
+/* Terminal styling */
+.xterm {
+  padding: 8px;
+}
+
+.xterm-viewport {
+  overflow-y: auto !important;
+}
+
+/* File tree styling */
+.file-tree-item {
+  @apply flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors;
+}
+
+.file-tree-item:hover {
+  @apply bg-secondary;
+}
+
+.file-tree-item.active {
+  @apply bg-primary/20 text-primary;
+}
+
+/* Tab styling */
+.editor-tab {
+  @apply flex items-center gap-2 px-3 py-2 border-r border-border text-sm cursor-pointer transition-colors;
+}
+
+.editor-tab:hover {
+  @apply bg-secondary;
+}
+
+.editor-tab.active {
+  @apply bg-background border-b-2 border-b-primary;
+}
+
+/* Panel resizer */
+.panel-resizer {
+  @apply bg-border hover:bg-primary transition-colors cursor-col-resize;
+  width: 4px;
+}
+
+.panel-resizer:hover {
+  width: 4px;
+}

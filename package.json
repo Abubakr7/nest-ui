@@ -1,0 +1,28 @@
+{
+  "name": "nest-ui",
+  "version": "1.0.0",
+  "description": "NestJS Development Studio - Build NestJS projects entirely through UI without IDE",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "start": "pnpm -r --parallel start",
+    "dev:api": "pnpm --filter @nest-ui/api dev",
+    "dev:web": "pnpm --filter @nest-ui/web dev",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean"
+  },
+  "keywords": [
+    "nestjs",
+    "development-studio",
+    "code-generator",
+    "ai-assistant",
+    "no-ide"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
