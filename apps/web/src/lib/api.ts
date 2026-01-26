@@ -310,3 +310,281 @@ export interface GenerateModuleDto {
   generateController?: boolean
   generateService?: boolean
 }
+
+// Git API
+export const gitApi = {
+  init: (projectId: string) =>
+    fetchApi<{ success: boolean }>(`/api/projects/${projectId}/git/init`, {
+      method: 'POST',
+    }),
+  status: (projectId: string) =>
+    fetchApi<{
+      branch: string
+      ahead: number
+      behind: number
+      staged: Array<{ file: string; status: string }>
+      unstaged: Array<{ file: string; status: string }>
+      untracked: string[]
+    }>(`/api/projects/${projectId}/git/status`),
+  log: (projectId: string, limit: number = 50) =>
+    fetchApi<Array<{
+      hash: string
+      shortHash: string
+      message: string
+      author: string
+      date: string
+    }>>(`/api/projects/${projectId}/git/log?limit=${limit}`),
+  branches: (projectId: string) =>
+    fetchApi<{ current: string; local: string[]; remote: string[] }>(
+      `/api/projects/${projectId}/git/branches`
+    ),
+  checkout: (projectId: string, branch: string, create: boolean = false) =>
+    fetchApi<{ success: boolean }>(`/api/projects/${projectId}/git/checkout`, {
+      method: 'POST',
+      body: JSON.stringify({ branch, create }),
+    }),
+  diff: (projectId: string, staged: boolean = false) =>
+    fetchApi<string>(`/api/projects/${projectId}/git/diff?staged=${staged}`),
+  add: (projectId: string, files: string[]) =>
+    fetchApi<{ success: boolean }>(`/api/projects/${projectId}/git/add`, {
+      method: 'POST',
+      body: JSON.stringify({ files }),
+    }),
+  commit: (projectId: string, message: string) =>
+    fetchApi<{ success: boolean; hash: string }>(`/api/projects/${projectId}/git/commit`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
+  push: (projectId: string, remote?: string, branch?: string) =>
+    fetchApi<{ success: boolean }>(`/api/projects/${projectId}/git/push`, {
+      method: 'POST',
+      body: JSON.stringify({ remote, branch }),
+    }),
+  pull: (projectId: string, remote?: string, branch?: string) =>
+    fetchApi<{ success: boolean }>(`/api/projects/${projectId}/git/pull`, {
+      method: 'POST',
+      body: JSON.stringify({ remote, branch }),
+    }),
+  discard: (projectId: string, files: string[]) =>
+    fetchApi<{ success: boolean }>(`/api/projects/${projectId}/git/discard`, {
+      method: 'POST',
+      body: JSON.stringify({ files }),
+    }),
+}
+
+// Dependencies API
+export const dependenciesApi = {
+  getAll: (projectId: string) =>
+    fetchApi<{
+      dependencies: Array<{ name: string; version: string }>
+      devDependencies: Array<{ name: string; version: string }>
+    }>(`/api/projects/${projectId}/dependencies`),
+  getOutdated: (projectId: string) =>
+    fetchApi<Array<{ name: string; current: string; wanted: string; latest: string }>>(
+      `/api/projects/${projectId}/dependencies/outdated`
+    ),
+  audit: (projectId: string) =>
+    fetchApi<{
+      vulnerabilities: { total: number; critical: number; high: number; moderate: number; low: number }
+      advisories: Array<{ id: number; title: string; severity: string; module: string }>
+    }>(`/api/projects/${projectId}/dependencies/audit`),
+  search: (query: string) =>
+    fetchApi<Array<{ name: string; version: string; description: string; downloads: number }>>(
+      `/api/projects/any/dependencies/search?q=${encodeURIComponent(query)}`
+    ),
+  install: (projectId: string, packages: string[], dev: boolean = false) =>
+    fetchApi<{ success: boolean; output: string }>(`/api/projects/${projectId}/dependencies/install`, {
+      method: 'POST',
+      body: JSON.stringify({ packages, dev }),
+    }),
+  uninstall: (projectId: string, packages: string[]) =>
+    fetchApi<{ success: boolean; output: string }>(`/api/projects/${projectId}/dependencies/uninstall`, {
+      method: 'DELETE',
+      body: JSON.stringify({ packages }),
+    }),
+  getScripts: (projectId: string) =>
+    fetchApi<Record<string, string>>(`/api/projects/${projectId}/dependencies/scripts`),
+  runScript: (projectId: string, script: string) =>
+    fetchApi<{ success: boolean; output: string }>(`/api/projects/${projectId}/dependencies/scripts/run`, {
+      method: 'POST',
+      body: JSON.stringify({ script }),
+    }),
+}
+
+// Testing API
+export const testingApi = {
+  discover: (projectId: string) =>
+    fetchApi<{ unit: string[]; e2e: string[]; total: number }>(
+      `/api/projects/${projectId}/testing/discover`
+    ),
+  runAll: (projectId: string, options?: { coverage?: boolean }) =>
+    fetchApi<{
+      success: boolean
+      summary: { passed: number; failed: number; skipped: number; total: number }
+      output: string
+    }>(`/api/projects/${projectId}/testing/run`, {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    }),
+  runFile: (projectId: string, file: string) =>
+    fetchApi<{ success: boolean; output: string }>(`/api/projects/${projectId}/testing/run/file`, {
+      method: 'POST',
+      body: JSON.stringify({ file }),
+    }),
+  getCoverage: (projectId: string) =>
+    fetchApi<{
+      total: { lines: number; statements: number; functions: number; branches: number }
+      files: Array<{ file: string; lines: number; statements: number; functions: number; branches: number }>
+    }>(`/api/projects/${projectId}/testing/coverage`),
+  setup: (projectId: string) =>
+    fetchApi<{ success: boolean; files: string[] }>(`/api/projects/${projectId}/testing/setup`, {
+      method: 'POST',
+    }),
+}
+
+// Docker API
+export const dockerApi = {
+  generate: (projectId: string, config: { nodeVersion?: string; port?: number; database?: string; redis?: boolean }) =>
+    fetchApi<{ files: string[] }>(`/api/projects/${projectId}/docker/generate`, {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+  getStatus: (projectId: string) =>
+    fetchApi<{ hasDockerfile: boolean; hasCompose: boolean; containers: Array<{ name: string; status: string }> }>(
+      `/api/projects/${projectId}/docker/status`
+    ),
+  build: (projectId: string) =>
+    fetchApi<{ success: boolean; output: string }>(`/api/projects/${projectId}/docker/build`, {
+      method: 'POST',
+    }),
+  up: (projectId: string, detach: boolean = true) =>
+    fetchApi<{ success: boolean; output: string }>(`/api/projects/${projectId}/docker/up`, {
+      method: 'POST',
+      body: JSON.stringify({ detach }),
+    }),
+  down: (projectId: string) =>
+    fetchApi<{ success: boolean; output: string }>(`/api/projects/${projectId}/docker/down`, {
+      method: 'POST',
+    }),
+  logs: (projectId: string) =>
+    fetchApi<{ logs: string }>(`/api/projects/${projectId}/docker/logs`),
+}
+
+// Environment API
+export const envApi = {
+  getFiles: (projectId: string) =>
+    fetchApi<string[]>(`/api/projects/${projectId}/env`),
+  getVariables: (projectId: string, envName: string) =>
+    fetchApi<Record<string, string>>(`/api/projects/${projectId}/env/${envName}`),
+  createFile: (projectId: string, envName: string, variables: Record<string, string>) =>
+    fetchApi<{ success: boolean }>(`/api/projects/${projectId}/env/${envName}`, {
+      method: 'POST',
+      body: JSON.stringify({ variables }),
+    }),
+  updateFile: (projectId: string, envName: string, variables: Record<string, string>) =>
+    fetchApi<{ success: boolean }>(`/api/projects/${projectId}/env/${envName}`, {
+      method: 'PUT',
+      body: JSON.stringify({ variables }),
+    }),
+  deleteFile: (projectId: string, envName: string) =>
+    fetchApi<{ success: boolean }>(`/api/projects/${projectId}/env/${envName}`, {
+      method: 'DELETE',
+    }),
+  validate: (projectId: string, envName: string) =>
+    fetchApi<{ valid: boolean; missing: string[]; extra: string[] }>(
+      `/api/projects/${projectId}/env/validate/${envName}`
+    ),
+}
+
+// Linting API
+export const lintingApi = {
+  setup: (projectId: string) =>
+    fetchApi<{ success: boolean; files: string[] }>(`/api/projects/${projectId}/linting/setup`, {
+      method: 'POST',
+    }),
+  getStatus: (projectId: string) =>
+    fetchApi<{ eslint: boolean; prettier: boolean; eslintConfig: string | null; prettierConfig: string | null }>(
+      `/api/projects/${projectId}/linting/status`
+    ),
+  lint: (projectId: string, fix: boolean = false) =>
+    fetchApi<{
+      success: boolean
+      totalErrors: number
+      totalWarnings: number
+      results: Array<{ file: string; errors: number; warnings: number; messages: any[] }>
+    }>(`/api/projects/${projectId}/linting/lint`, {
+      method: 'POST',
+      body: JSON.stringify({ fix }),
+    }),
+  format: (projectId: string) =>
+    fetchApi<{ success: boolean; output: string }>(`/api/projects/${projectId}/linting/format`, {
+      method: 'POST',
+    }),
+}
+
+// CI/CD API
+export const cicdApi = {
+  generate: (projectId: string, config: { provider: string; deploy?: string; docker?: boolean }) =>
+    fetchApi<{ files: string[] }>(`/api/projects/${projectId}/cicd/generate`, {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+  getStatus: (projectId: string) =>
+    fetchApi<{ github: boolean; gitlab: boolean; jenkins: boolean }>(
+      `/api/projects/${projectId}/cicd/status`
+    ),
+  getTemplates: () =>
+    fetchApi<Array<{ id: string; name: string; description: string }>>('/api/projects/any/cicd/templates'),
+}
+
+// Documentation API
+export const docsApi = {
+  generateReadme: (projectId: string) =>
+    fetchApi<{ content: string; path: string }>(`/api/projects/${projectId}/docs/readme`, {
+      method: 'POST',
+    }),
+  generateApiDocs: (projectId: string) =>
+    fetchApi<{ content: string; path: string }>(`/api/projects/${projectId}/docs/api`, {
+      method: 'POST',
+    }),
+  generateModuleDocs: (projectId: string, moduleName: string) =>
+    fetchApi<{ content: string; path: string }>(`/api/projects/${projectId}/docs/module/${moduleName}`, {
+      method: 'POST',
+    }),
+  generateChangelog: (projectId: string) =>
+    fetchApi<{ content: string; path: string }>(`/api/projects/${projectId}/docs/changelog`, {
+      method: 'POST',
+    }),
+  getDocTree: (projectId: string) =>
+    fetchApi<Array<{ name: string; path: string; type: string }>>(`/api/projects/${projectId}/docs/tree`),
+}
+
+// Snippets API
+export const snippetsApi = {
+  getAll: (category?: string) =>
+    fetchApi<Array<{ id: string; name: string; description: string; category: string; prefix: string; body: string }>>(
+      `/api/snippets${category ? `?category=${category}` : ''}`
+    ),
+  getCategories: () => fetchApi<string[]>('/api/snippets/categories'),
+  getBuiltIn: () =>
+    fetchApi<Array<{ id: string; name: string; description: string; category: string; prefix: string; body: string }>>(
+      '/api/snippets/built-in'
+    ),
+  create: (snippet: { name: string; description?: string; category: string; prefix: string; body: string }) =>
+    fetchApi<any>('/api/snippets', {
+      method: 'POST',
+      body: JSON.stringify(snippet),
+    }),
+  delete: (id: string) =>
+    fetchApi<{ success: boolean }>(`/api/snippets/${id}`, {
+      method: 'DELETE',
+    }),
+  getProjectTemplates: () =>
+    fetchApi<Array<{ id: string; name: string; description: string; features: string[] }>>(
+      '/api/snippets/templates/project'
+    ),
+  getModuleTemplates: () =>
+    fetchApi<Array<{ id: string; name: string; description: string; files: string[] }>>(
+      '/api/snippets/templates/module'
+    ),
+}
