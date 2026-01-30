@@ -6,7 +6,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-interface LintResult {
+export interface LintResult {
   file: string;
   errors: number;
   warnings: number;

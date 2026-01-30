@@ -49,7 +49,7 @@ export class TerminalGateway implements OnGatewayConnection, OnGatewayDisconnect
         client.emit('terminal:output', { data: output });
       });
 
-      terminal.onExit(({ exitCode }) => {
+      terminal.onExit(({ exitCode }: { exitCode: number }) => {
         client.emit('terminal:exit', { exitCode });
       });
 

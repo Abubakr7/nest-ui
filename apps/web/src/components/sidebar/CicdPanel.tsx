@@ -23,37 +23,141 @@ export function CicdPanel({ projectPath }: CicdPanelProps) {
   const [nodeVersion, setNodeVersion] = useState('20');
 
   const generateConfig = async () => {
+    if (!projectPath) return;
     setLoading(true);
     try {
-      const options = {
+      const result = await cicdApi.generate(projectPath, {
+        provider: selectedProvider,
+        docker: includeDocker,
+        deploy: includeDeploy ? 'production' : undefined,
+      });
+
+      // Generate a sample config content for display
+      const configContent = generateSampleConfig(selectedProvider, {
         tests: includeTests,
         lint: includeLint,
         build: includeBuild,
         docker: includeDocker,
         deploy: includeDeploy,
         nodeVersion,
-      };
+      });
 
-      let result;
-      switch (selectedProvider) {
-        case 'github':
-          result = await cicdApi.generateGithubActions(projectPath, options);
-          break;
-        case 'gitlab':
-          result = await cicdApi.generateGitlabCI(projectPath, options);
-          break;
-        case 'jenkins':
-          result = await cicdApi.generateJenkinsfile(projectPath, options);
-          break;
-      }
-
-      setGeneratedConfig(result?.content || '');
+      setGeneratedConfig(configContent);
     } catch (error) {
       console.error('Failed to generate CI/CD config:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const generateSampleConfig = (provider: CIProvider, options: any): string => {
+    if (provider === 'github') {
+      return `name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '${options.nodeVersion}'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+${options.lint ? `
+      - name: Run linting
+        run: npm run lint
+` : ''}${options.tests ? `
+      - name: Run tests
+        run: npm test
+` : ''}${options.build ? `
+      - name: Build
+        run: npm run build
+` : ''}${options.docker ? `
+      - name: Build Docker image
+        run: docker build -t myapp .
+` : ''}`;
+    } else if (provider === 'gitlab') {
+      return `stages:
+  - install
+  - test
+  - build
+  - deploy
+
+variables:
+  NODE_VERSION: "${options.nodeVersion}"
+
+cache:
+  paths:
+    - node_modules/
+
+install:
+  stage: install
+  script:
+    - npm ci
+${options.lint ? `
+lint:
+  stage: test
+  script:
+    - npm run lint
+` : ''}${options.tests ? `
+test:
+  stage: test
+  script:
+    - npm test
+` : ''}${options.build ? `
+build:
+  stage: build
+  script:
+    - npm run build
+` : ''}`;
+    } else {
+      return `pipeline {
+    agent any
+
+    tools {
+        nodejs 'NodeJS ${options.nodeVersion}'
+    }
+
+    stages {
+        stage('Install') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+${options.lint ? `
+        stage('Lint') {
+            steps {
+                sh 'npm run lint'
+            }
+        }
+` : ''}${options.tests ? `
+        stage('Test') {
+            steps {
+                sh 'npm test'
+            }
+        }
+` : ''}${options.build ? `
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+` : ''}    }
+}`;
+    }
+  }
 
   const getProviderInfo = () => {
     switch (selectedProvider) {

@@ -17,7 +17,11 @@ import {
   RefreshCw,
 } from 'lucide-react'
 
-export function GitPanel() {
+interface GitPanelProps {
+  projectPath: string;
+}
+
+export function GitPanel({ projectPath }: GitPanelProps) {
   const { currentProject } = useProjectStore()
   const [status, setStatus] = useState<any>(null)
   const [commitMessage, setCommitMessage] = useState('')

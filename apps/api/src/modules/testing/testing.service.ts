@@ -6,7 +6,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-interface TestResult {
+export interface TestResult {
   file: string;
   tests: Array<{
     name: string;

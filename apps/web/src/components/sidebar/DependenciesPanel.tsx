@@ -5,7 +5,11 @@ import { useProjectStore } from '@/stores/projectStore'
 import { dependenciesApi } from '@/lib/api'
 import { Package, Search, Plus, Trash2, AlertTriangle, RefreshCw, Play } from 'lucide-react'
 
-export function DependenciesPanel() {
+interface DependenciesPanelProps {
+  projectPath: string;
+}
+
+export function DependenciesPanel({ projectPath }: DependenciesPanelProps) {
   const { currentProject } = useProjectStore()
   const [deps, setDeps] = useState<any>(null)
   const [outdated, setOutdated] = useState<any[]>([])

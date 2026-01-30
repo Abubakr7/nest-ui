@@ -83,8 +83,8 @@ export class EnvironmentService {
     key: string,
     value: string,
   ): Promise<{ success: boolean }> {
-    const variables = await this.getEnvVariables(projectId, envName).catch(
-      () => ({}),
+    const variables: Record<string, string> = await this.getEnvVariables(projectId, envName).catch(
+      () => ({} as Record<string, string>),
     );
     variables[key] = value;
     return this.updateEnvFile(projectId, envName, variables);
@@ -101,8 +101,8 @@ export class EnvironmentService {
   }
 
   async generateExample(projectId: string): Promise<{ success: boolean }> {
-    const variables = await this.getEnvVariables(projectId, '.env').catch(
-      () => ({}),
+    const variables: Record<string, string> = await this.getEnvVariables(projectId, '.env').catch(
+      () => ({} as Record<string, string>),
     );
 
     const exampleVariables: Record<string, string> = {};

@@ -22,7 +22,7 @@ export function Terminal() {
         // Dynamic imports for xterm
         const { Terminal } = await import('@xterm/xterm')
         const { FitAddon } = await import('@xterm/addon-fit')
-        await import('@xterm/xterm/css/xterm.css')
+        // CSS is imported via link tag in layout or global styles
 
         // Create terminal
         xterm = new Terminal({

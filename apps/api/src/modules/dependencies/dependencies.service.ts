@@ -6,7 +6,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-interface PackageInfo {
+export interface PackageInfo {
   name: string;
   version: string;
   description?: string;

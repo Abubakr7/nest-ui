@@ -24,10 +24,25 @@ export function LintingPanel({ projectPath }: LintingPanelProps) {
   const [activeTab, setActiveTab] = useState<'lint' | 'format' | 'setup'>('lint');
 
   const runLint = async (fix = false) => {
+    if (!projectPath) return;
     setLoading(true);
     try {
       const result = await lintingApi.lint(projectPath, fix);
-      setErrors(result.errors || []);
+      // Convert results to flat error list
+      const allErrors: LintError[] = [];
+      for (const fileResult of result.results || []) {
+        for (const msg of fileResult.messages || []) {
+          allErrors.push({
+            file: fileResult.file,
+            line: msg.line || 0,
+            column: msg.column || 0,
+            message: msg.message || '',
+            rule: msg.ruleId || '',
+            severity: msg.severity === 2 ? 'error' : 'warning',
+          });
+        }
+      }
+      setErrors(allErrors);
       setLastRun(new Date());
     } catch (error) {
       console.error('Failed to run lint:', error);
@@ -37,11 +52,12 @@ export function LintingPanel({ projectPath }: LintingPanelProps) {
   };
 
   const runFormat = async (check = false) => {
+    if (!projectPath) return;
     setLoading(true);
     try {
-      const result = await lintingApi.format(projectPath, check);
-      if (!check) {
-        alert(`Formatted ${result.filesChanged || 0} files`);
+      const result = await lintingApi.format(projectPath);
+      if (result.success) {
+        alert('Files formatted successfully!');
       }
       setLastRun(new Date());
     } catch (error) {
@@ -52,9 +68,10 @@ export function LintingPanel({ projectPath }: LintingPanelProps) {
   };
 
   const setupEslint = async () => {
+    if (!projectPath) return;
     setSetupLoading(true);
     try {
-      await lintingApi.setupEslint(projectPath);
+      await lintingApi.setup(projectPath);
       alert('ESLint configuration created successfully!');
     } catch (error) {
       console.error('Failed to setup ESLint:', error);
@@ -64,9 +81,10 @@ export function LintingPanel({ projectPath }: LintingPanelProps) {
   };
 
   const setupPrettier = async () => {
+    if (!projectPath) return;
     setSetupLoading(true);
     try {
-      await lintingApi.setupPrettier(projectPath);
+      await lintingApi.setup(projectPath);
       alert('Prettier configuration created successfully!');
     } catch (error) {
       console.error('Failed to setup Prettier:', error);

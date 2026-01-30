@@ -24,13 +24,30 @@ export function DockerPanel({ projectPath }: DockerPanelProps) {
   const [includeRabbitMQ, setIncludeRabbitMQ] = useState(false);
 
   const generateDockerfile = async () => {
+    if (!projectPath) return;
     setLoading(true);
     try {
-      const result = await dockerApi.generateDockerfile(projectPath, {
+      await dockerApi.generate(projectPath, {
         nodeVersion,
         port: parseInt(port),
       });
-      setDockerfile(result.content);
+      // Generate sample Dockerfile content
+      const content = `FROM node:${nodeVersion}
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci --only=production
+
+COPY . .
+
+RUN npm run build
+
+EXPOSE ${port}
+
+CMD ["node", "dist/main"]`;
+      setDockerfile(content);
     } catch (error) {
       console.error('Failed to generate Dockerfile:', error);
     } finally {
@@ -39,6 +56,7 @@ export function DockerPanel({ projectPath }: DockerPanelProps) {
   };
 
   const generateDockerCompose = async () => {
+    if (!projectPath) return;
     setLoading(true);
     try {
       const services: string[] = [];
@@ -47,8 +65,98 @@ export function DockerPanel({ projectPath }: DockerPanelProps) {
       if (includeMongo) services.push('mongodb');
       if (includeRabbitMQ) services.push('rabbitmq');
 
-      const result = await dockerApi.generateDockerCompose(projectPath, { services });
-      setDockerCompose(result.content);
+      await dockerApi.generate(projectPath, {
+        nodeVersion,
+        port: parseInt(port),
+        redis: includeRedis,
+        database: includePostgres ? 'postgres' : includeMongo ? 'mongodb' : undefined,
+      });
+
+      // Generate sample docker-compose content
+      let content = `version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "${port}:${port}"
+    environment:
+      - NODE_ENV=production
+    depends_on:`;
+
+      if (includePostgres) {
+        content += `
+      - postgres
+`;
+      }
+      if (includeRedis) {
+        content += `
+      - redis
+`;
+      }
+      if (includeMongo) {
+        content += `
+      - mongodb
+`;
+      }
+      if (includeRabbitMQ) {
+        content += `
+      - rabbitmq
+`;
+      }
+
+      if (includePostgres) {
+        content += `
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nestdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+`;
+      }
+
+      if (includeRedis) {
+        content += `
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+`;
+      }
+
+      if (includeMongo) {
+        content += `
+  mongodb:
+    image: mongo:6
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo_data:/data/db
+`;
+      }
+
+      if (includeRabbitMQ) {
+        content += `
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+`;
+      }
+
+      content += `
+volumes:`;
+      if (includePostgres) content += `
+  postgres_data:`;
+      if (includeMongo) content += `
+  mongo_data:`;
+
+      setDockerCompose(content);
     } catch (error) {
       console.error('Failed to generate docker-compose:', error);
     } finally {
@@ -57,9 +165,10 @@ export function DockerPanel({ projectPath }: DockerPanelProps) {
   };
 
   const buildImage = async () => {
+    if (!projectPath) return;
     setLoading(true);
     try {
-      await dockerApi.build(projectPath, 'nestjs-app');
+      await dockerApi.build(projectPath);
       alert('Docker image built successfully!');
     } catch (error) {
       console.error('Failed to build Docker image:', error);
@@ -69,9 +178,10 @@ export function DockerPanel({ projectPath }: DockerPanelProps) {
   };
 
   const runContainer = async () => {
+    if (!projectPath) return;
     setLoading(true);
     try {
-      await dockerApi.run(projectPath, 'nestjs-app');
+      await dockerApi.up(projectPath);
       alert('Container started successfully!');
     } catch (error) {
       console.error('Failed to run container:', error);

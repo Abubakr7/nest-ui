@@ -30,8 +30,14 @@ export function EnvironmentPanel({ projectPath }: EnvironmentPanelProps) {
     if (!projectPath) return;
     setLoading(true);
     try {
-      const result = await envApi.getVariables(projectPath, activeEnv);
-      setVariables(result.variables || []);
+      const result = await envApi.getVariables(projectPath, `.env.${activeEnv}`);
+      // Convert Record<string, string> to EnvVariable[]
+      const vars: EnvVariable[] = Object.entries(result).map(([key, value]) => ({
+        key,
+        value,
+        isSecret: key.includes('SECRET') || key.includes('PASSWORD') || key.includes('KEY'),
+      }));
+      setVariables(vars);
     } catch (error) {
       console.error('Failed to load environment variables:', error);
       setVariables([]);
@@ -41,10 +47,14 @@ export function EnvironmentPanel({ projectPath }: EnvironmentPanelProps) {
   };
 
   const addVariable = async () => {
-    if (!newKey.trim()) return;
+    if (!newKey.trim() || !projectPath) return;
     setLoading(true);
     try {
-      await envApi.setVariable(projectPath, activeEnv, newKey, newValue, newIsSecret);
+      // Get current variables and add new one
+      const envFileName = `.env.${activeEnv}`;
+      const currentVars = await envApi.getVariables(projectPath, envFileName).catch(() => ({}));
+      const updatedVars = { ...currentVars, [newKey]: newValue };
+      await envApi.updateFile(projectPath, envFileName, updatedVars);
       setNewKey('');
       setNewValue('');
       setNewIsSecret(false);
@@ -57,10 +67,18 @@ export function EnvironmentPanel({ projectPath }: EnvironmentPanelProps) {
   };
 
   const deleteVariable = async (key: string) => {
-    if (!confirm(`Delete variable ${key}?`)) return;
+    if (!confirm(`Delete variable ${key}?`) || !projectPath) return;
     setLoading(true);
     try {
-      await envApi.deleteVariable(projectPath, activeEnv, key);
+      const envFileName = `.env.${activeEnv}`;
+      const currentVars: Record<string, string> = await envApi.getVariables(projectPath, envFileName).catch(() => ({} as Record<string, string>));
+      const remaining: Record<string, string> = {};
+      for (const k of Object.keys(currentVars)) {
+        if (k !== key) {
+          remaining[k] = currentVars[k];
+        }
+      }
+      await envApi.updateFile(projectPath, envFileName, remaining);
       await loadVariables();
     } catch (error) {
       console.error('Failed to delete variable:', error);
@@ -70,9 +88,13 @@ export function EnvironmentPanel({ projectPath }: EnvironmentPanelProps) {
   };
 
   const copyToEnv = async (targetEnv: string) => {
+    if (!projectPath) return;
     setLoading(true);
     try {
-      await envApi.copyEnv(projectPath, activeEnv, targetEnv);
+      const sourceFileName = `.env.${activeEnv}`;
+      const targetFileName = `.env.${targetEnv}`;
+      const sourceVars = await envApi.getVariables(projectPath, sourceFileName).catch(() => ({}));
+      await envApi.createFile(projectPath, targetFileName, sourceVars);
       alert(`Copied to ${targetEnv} environment`);
     } catch (error) {
       console.error('Failed to copy environment:', error);

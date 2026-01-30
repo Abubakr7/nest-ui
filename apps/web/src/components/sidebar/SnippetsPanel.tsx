@@ -39,8 +39,15 @@ export function SnippetsPanel({ projectPath, onInsertCode }: SnippetsPanelProps)
 
   const loadSnippets = async () => {
     try {
-      const result = await snippetsApi.getSnippets();
-      setSnippets(result.snippets || getDefaultSnippets());
+      const result = await snippetsApi.getAll();
+      setSnippets(result.length > 0 ? result.map(s => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        category: s.category,
+        code: s.body,
+        language: 'typescript'
+      })) : getDefaultSnippets());
     } catch (error) {
       setSnippets(getDefaultSnippets());
     }
@@ -48,8 +55,15 @@ export function SnippetsPanel({ projectPath, onInsertCode }: SnippetsPanelProps)
 
   const loadTemplates = async () => {
     try {
-      const result = await snippetsApi.getTemplates();
-      setTemplates(result.templates || getDefaultTemplates());
+      const result = await snippetsApi.getModuleTemplates();
+      setTemplates(result.length > 0 ? result.map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        category: 'module',
+        code: t.files.join('\n'),
+        language: 'typescript'
+      })) : getDefaultTemplates());
     } catch (error) {
       setTemplates(getDefaultTemplates());
     }
@@ -292,12 +306,12 @@ export const CurrentUser = createParamDecorator(
 
     setLoading(true);
     try {
-      await snippetsApi.saveSnippet({
+      await snippetsApi.create({
         name: customName,
         description: customDescription,
         category: customCategory,
-        code: customCode,
-        language: 'typescript',
+        prefix: customName.toLowerCase().replace(/\s+/g, '-'),
+        body: customCode,
       });
       await loadSnippets();
       setCustomName('');

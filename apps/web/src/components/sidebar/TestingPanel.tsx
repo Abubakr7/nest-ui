@@ -5,7 +5,11 @@ import { useProjectStore } from '@/stores/projectStore'
 import { testingApi } from '@/lib/api'
 import { TestTube, Play, CheckCircle, XCircle, Clock, BarChart2, RefreshCw } from 'lucide-react'
 
-export function TestingPanel() {
+interface TestingPanelProps {
+  projectPath: string;
+}
+
+export function TestingPanel({ projectPath }: TestingPanelProps) {
   const { currentProject } = useProjectStore()
   const [tests, setTests] = useState<{ unit: string[]; e2e: string[]; total: number } | null>(null)
   const [results, setResults] = useState<any>(null)
